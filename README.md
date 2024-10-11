@@ -40,7 +40,7 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
 
 ## Installation
 
-This project runs in any modern browser. Simply open the `index.html` file in your browser to start the visualizer.
+This project runs in any modern browser. Simply open the `cym.html` file in your browser to start the visualizer.
 
 1. Clone or download the repository.
 2. Open the `index.html` file in a web browser.
