@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cymatic Visualizer POC</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            border: 1px solid #fff;
+        }
+
+        #controls {
+            margin-top: 20px;
+        }
+
+        input[type=range] {
+            width: 300px;
+        }
+
+        input[type=number] {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cymatic Visualizer POC</h1>
+
+    <canvas id="visualizer" width="600" height="600"></canvas>
+
+    <div id="controls">
+        <label for="frequency">Frequency: </label>
+        <input type="range" id="frequency-slider" min="20" max="5000" step="0.1" value="440">
+        <input type="number" id="frequency-input" min="20" max="5000" step="0.1" value="440">
+        <span id="frequency-value">440 Hz</span>
+        <br><br>
+        <button id="start-tone">Start Tone</button>
+        <button id="stop-tone">Stop Tone</button>
+    </div>
+
+    <script>
+        // Audio setup
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let oscillator = null;
+        let gainNode = audioContext.createGain();
+
+        // Canvas setup
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        // Tone generator controls
+        const frequencySlider = document.getElementById('frequency-slider');
+        const frequencyInput = document.getElementById('frequency-input');
+        const frequencyValue = document.getElementById('frequency-value');
+        const startToneButton = document.getElementById('start-tone');
+        const stopToneButton = document.getElementById('stop-tone');
+
+        // Function to start the tone generator
+        function startTone(frequency) {
+            if (oscillator) {
+                oscillator.stop();
+            }
+            oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+        }
+
+        // Function to stop the tone generator
+        function stopTone() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator = null;
+            }
+        }
+
+        // Update frequency value dynamically from slider and input
+        frequencySlider.addEventListener('input', function() {
+            const frequency = parseFloat(this.value);
+            frequencyInput.value = frequency;
+            frequencyValue.textContent = `${frequency} Hz`;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+        });
+
+        frequencyInput.addEventListener('input', function() {
+            const frequency = parseFloat(this.value);
+            frequencySlider.value = frequency;
+            frequencyValue.textContent = `${frequency} Hz`;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+        });
+
+        // Start/Stop button actions
+        startToneButton.addEventListener('click', () => startTone(frequencySlider.value));
+        stopToneButton.addEventListener('click', stopTone);
+
+        // Cymatic pattern generator
+        function drawCymaticPattern(frequency) {
+            ctx.clearRect(0, 0, width, height);
+            const points = 720; // Higher resolution with more points
+            const maxRadius = Math.min(centerX, centerY) * 0.9;
+            const waveCount = 8; // Set how many waves we want expanding from the center
+
+            // Loop through points to create a radial pattern with multiple expanding waves
+            for (let i = 0; i < points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+
+                // Loop to create concentric wave rings from the center
+                for (let j = 1; j <= waveCount; j++) {
+                    const radius = (maxRadius / waveCount) * j; // More concentric waves
+                    const wave = Math.sin(frequency * 0.05 * i * j) * 20; // Adjust for bigger waves
+                    const x = centerX + (radius + wave) * Math.cos(angle);
+                    const y = centerY + (radius + wave) * Math.sin(angle);
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            const frequency = frequencySlider.value;
+            drawCymaticPattern(frequency);
+            requestAnimationFrame(animate);
+        }
+
+        // Start the animation
+        animate();
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cymatic Visualizer with Musical Notes</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        canvas {
+            border: 1px solid #fff;
+            width: 95vw;
+            height: 95vh;
+            max-width: 800px;
+            max-height: 800px;
+        }
+
+        #controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        input[type=range] {
+            width: 300px;
+            margin: 10px 0;
+        }
+
+        input[type=number] {
+            width: 100px;
+            margin-left: 10px;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        button {
+            margin: 5px;
+        }
+
+        #note-buttons {
+            margin-top: 20px;
+        }
+
+        .note-button {
+            margin: 2px;
+            padding: 5px 10px;
+        }
+
+        @media (max-width: 600px) {
+            input[type=range] {
+                width: 80vw;
+            }
+
+            input[type=number] {
+                width: 60vw;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cymatic Visualizer with Musical Notes</h1>
+
+    <canvas id="visualizer"></canvas>
+
+    <div id="controls">
+        <label for="frequency-slider">Frequency:</label>
+        <input type="range" id="frequency-slider" min="20" max="5000" step="0.1" value="440">
+        <input type="number" id="frequency-input" min="20" max="5000" step="0.1" value="440">
+        <span id="frequency-value">440 Hz</span>
+        <br><br>
+        <button id="start-tone">Start Tone</button>
+        <button id="stop-tone">Stop Tone</button>
+
+        <div id="note-buttons">
+            <p>Select a note:</p>
+            <!-- Buttons for notes in the A4 octave -->
+            <button class="note-button" data-frequency="261.63">C4</button>
+            <button class="note-button" data-frequency="293.66">D4</button>
+            <button class="note-button" data-frequency="329.63">E4</button>
+            <button class="note-button" data-frequency="349.23">F4</button>
+            <button class="note-button" data-frequency="392.00">G4</button>
+            <button class="note-button" data-frequency="440.00">A4</button>
+            <button class="note-button" data-frequency="493.88">B4</button>
+            <button class="note-button" data-frequency="523.25">C5</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio setup
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContext();
+        let oscillator = null;
+        let gainNode = audioContext.createGain();
+        let time = 0; // Time variable for real-time wave evolution
+
+        // Canvas setup
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width;
+        let height = canvas.height;
+        let centerX = width / 2;
+        let centerY = height / 2;
+
+        // Tone generator controls
+        const frequencySlider = document.getElementById('frequency-slider');
+        const frequencyInput = document.getElementById('frequency-input');
+        const frequencyValue = document.getElementById('frequency-value');
+        const startToneButton = document.getElementById('start-tone');
+        const stopToneButton = document.getElementById('stop-tone');
+        const noteButtons = document.querySelectorAll('.note-button');
+
+        // Function to validate frequency input
+        function validateFrequency(value) {
+            const min = 20;
+            const max = 5000;
+            let frequency = parseFloat(value);
+            if (isNaN(frequency)) frequency = 440;
+            frequency = Math.max(min, Math.min(max, frequency));
+            return frequency;
+        }
+
+        // Function to start the tone generator
+        function startTone(frequency) {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            stopTone(); // Ensure previous oscillator is stopped
+            oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+
+            // Update button states
+            startToneButton.disabled = true;
+            stopToneButton.disabled = false;
+        }
+
+        // Function to stop the tone generator
+        function stopTone() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator.disconnect();
+                oscillator = null;
+            }
+
+            // Update button states
+            startToneButton.disabled = false;
+            stopToneButton.disabled = true;
+        }
+
+        // Update frequency value dynamically from slider and input
+        frequencySlider.addEventListener('input', function() {
+            const frequency = validateFrequency(this.value);
+            frequencyInput.value = frequency;
+            frequencyValue.textContent = `${frequency} Hz`;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+        });
+
+        frequencyInput.addEventListener('input', function() {
+            const frequency = validateFrequency(this.value);
+            frequencySlider.value = frequency;
+            frequencyValue.textContent = `${frequency} Hz`;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+        });
+
+        // Start/Stop button actions
+        startToneButton.addEventListener('click', () => {
+            const frequency = validateFrequency(frequencySlider.value);
+            startTone(frequency);
+        });
+        stopToneButton.addEventListener('click', stopTone);
+
+        // Initially disable the stop button
+        stopToneButton.disabled = true;
+
+        // Responsive canvas resizing
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            width = canvas.width;
+            height = canvas.height;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Call once to set initial size
+
+        // Cymatic pattern generator with evolving waves
+        function drawCymaticPattern(frequency) {
+            ctx.clearRect(0, 0, width, height);
+            const isHighRes = window.devicePixelRatio > 1;
+            const points = isHighRes ? 720 : 720; // Increased points for higher resolution
+            const maxRadius = Math.min(centerX, centerY) * 0.9;
+            const waveCount = 10; // Increased number of concentric waves
+
+            // Loop through points to create a radial pattern with multiple expanding waves
+            for (let i = 0; i < points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+
+                // Loop to create concentric wave rings from the center
+                for (let j = 1; j <= waveCount; j++) {
+                    const radius = (maxRadius / waveCount) * j;
+                    const wave = Math.sin(frequency * 0.0005 * i * j + time) * 20;
+                    const x = centerX + (radius + wave) * Math.cos(angle);
+                    const y = centerY + (radius + wave) * Math.sin(angle);
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2); // Increased point size to 3
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Animation loop with time evolution
+        function animate() {
+            const frequency = validateFrequency(frequencySlider.value);
+            drawCymaticPattern(frequency);
+            time = (time + 0.02) % (Math.PI * 2); // Keeps time within a reasonable range
+            requestAnimationFrame(animate);
+        }
+
+        // Note buttons event listeners
+        noteButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const frequency = parseFloat(button.getAttribute('data-frequency'));
+                frequencySlider.value = frequency;
+                frequencyInput.value = frequency;
+                frequencyValue.textContent = `${frequency} Hz`;
+
+                if (oscillator) {
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                }
+            });
+        });
+
+        // Accessibility enhancements
+        frequencySlider.setAttribute('tabindex', '0');
+        frequencyInput.setAttribute('tabindex', '0');
+        startToneButton.setAttribute('tabindex', '0');
+        stopToneButton.setAttribute('tabindex', '0');
+        noteButtons.forEach(button => {
+            button.setAttribute('tabindex', '0');
+        });
+
+        // Start the animation
+        animate();
+    </script>
+
+</body>
+</html>
