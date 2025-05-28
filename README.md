@@ -6,8 +6,11 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
 
 - **Dynamic Cymatic Patterns**: Watch real-time visualizations of cymatic patterns that change with frequency and time evolution.
 - **Interactive Frequency Controls**: Adjust the frequency using a slider or manual input, with a range of 20 Hz to 5000 Hz.
-- **Musical Note Buttons**: Quickly switch between predefined musical notes (C4 to C5), which will update the frequency and visual pattern.
-- **Real-Time Tone Generation**: Play a sine wave tone that matches the selected frequency.
+- **Musical Note Buttons**: Quickly switch between predefined musical notes (C3 to C6). The selected note is highlighted in the interface.
+- **Real-Time Tone Generation**: Play a tone that matches the selected frequency with optional waveform types.
+- **Waveform and Color Controls**: Choose between sine, square, sawtooth or triangle waveforms and set the pattern color.
+- **Animation Control**: Pause or resume the visualization and export the canvas as an image.
+- **Microphone Support**: Visualize external audio sources using your microphone.
 - **Responsive Design**: The visualizer adapts to different screen sizes and resolutions.
 - **Accessibility Features**: All input elements are keyboard accessible.
 
@@ -19,8 +22,13 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
     - The frequency range is from **20 Hz** to **5000 Hz**.
     - The cymatic pattern will update in real-time based on the selected frequency.
 3. **Stop the Tone**: Click the `Stop Tone` button to stop the sine wave generation.
-4. **Select a Musical Note**: Use the provided buttons to quickly set the frequency to predefined musical notes (C4, D4, E4, etc.).
-5. **Responsive Canvas**: The canvas automatically adjusts to the screen size, ensuring optimal viewing on all devices.
+4. **Select a Musical Note**: Use the note buttons to set the frequency for notes from C3 to C6. The active note is highlighted.
+5. **Choose a Waveform**: Select the oscillator waveform (sine, square, sawtooth or triangle).
+6. **Pick a Color**: Change the pattern color using the color picker.
+7. **Pause/Resume Animation**: Use the toggle button to pause or resume the visualization.
+8. **Download Image**: Save the current canvas as an image.
+9. **Use the Microphone**: Activate microphone input to visualize external sounds.
+10. **Responsive Canvas**: The canvas automatically adjusts to the screen size, ensuring optimal viewing on all devices.
 
 ## Project Structure
 
@@ -37,13 +45,14 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
 - The **time variable** is used to animate the patterns in real-time, simulating the movement of sound waves.
 - **Wave Count**: Increased to **10** concentric waves for better visual detail.
 - **High-Resolution Support**: Automatically detects and adjusts for high-resolution screens.
+- **Local Storage**: Your last used frequency, color and waveform are saved between sessions.
 
 ## Installation
 
 This project runs in any modern browser. Simply open the `cym.html` file in your browser to start the visualizer.
 
 1. Clone or download the repository.
-2. Open the `index.html` file in a web browser.
+2. Open the `cym.html` file in a web browser.
 3. Start experimenting with frequencies and enjoy the cymatic visualizations.
 
 ## License
