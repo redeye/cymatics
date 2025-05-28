@@ -57,6 +57,10 @@
             margin: 2px;
             padding: 5px 10px;
         }
+        .selected-note {
+            background-color: #444;
+            color: yellow;
+        }
 
         @media (max-width: 600px) {
             input[type=range] {
@@ -77,16 +81,34 @@
 
     <div id="controls">
         <label for="frequency-slider">Frequency:</label>
-        <input type="range" id="frequency-slider" min="20" max="5000" step="0.1" value="440">
-        <input type="number" id="frequency-input" min="20" max="5000" step="0.1" value="440">
+        <input type="range" id="frequency-slider" min="20" max="5000" step="0.01" value="440">
+        <input type="number" id="frequency-input" min="20" max="5000" step="0.01" value="440">
         <span id="frequency-value">440 Hz</span>
         <br><br>
         <button id="start-tone">Start Tone</button>
         <button id="stop-tone">Stop Tone</button>
+        <label for="waveform-select">Waveform:</label>
+        <select id="waveform-select">
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+            <option value="triangle">Triangle</option>
+        </select>
+        <label for="color-picker">Color:</label>
+        <input type="color" id="color-picker" value="#00ffff">
+        <button id="toggle-animation">Pause Animation</button>
+        <button id="download-image">Download Image</button>
+        <button id="toggle-mic">Start Microphone</button>
 
         <div id="note-buttons">
             <p>Select a note:</p>
-            <!-- Buttons for notes in the A4 octave -->
+            <button class="note-button" data-frequency="130.81">C3</button>
+            <button class="note-button" data-frequency="146.83">D3</button>
+            <button class="note-button" data-frequency="164.81">E3</button>
+            <button class="note-button" data-frequency="174.61">F3</button>
+            <button class="note-button" data-frequency="196.00">G3</button>
+            <button class="note-button" data-frequency="220.00">A3</button>
+            <button class="note-button" data-frequency="246.94">B3</button>
             <button class="note-button" data-frequency="261.63">C4</button>
             <button class="note-button" data-frequency="293.66">D4</button>
             <button class="note-button" data-frequency="329.63">E4</button>
@@ -95,6 +117,13 @@
             <button class="note-button" data-frequency="440.00">A4</button>
             <button class="note-button" data-frequency="493.88">B4</button>
             <button class="note-button" data-frequency="523.25">C5</button>
+            <button class="note-button" data-frequency="587.33">D5</button>
+            <button class="note-button" data-frequency="659.25">E5</button>
+            <button class="note-button" data-frequency="698.46">F5</button>
+            <button class="note-button" data-frequency="783.99">G5</button>
+            <button class="note-button" data-frequency="880.00">A5</button>
+            <button class="note-button" data-frequency="987.77">B5</button>
+            <button class="note-button" data-frequency="1046.50">C6</button>
         </div>
     </div>
 
@@ -105,6 +134,14 @@
         let oscillator = null;
         let gainNode = audioContext.createGain();
         let time = 0; // Time variable for real-time wave evolution
+        let currentWaveform = localStorage.getItem('cym-waveform') || 'sine';
+        let pointColor = localStorage.getItem('cym-color') || '#00ffff';
+        let animationId;
+        let isAnimating = true;
+        let useMicrophone = false;
+        let analyser = null;
+        let dataArray = null;
+        let microphoneSource = null;
 
         // Canvas setup
         const canvas = document.getElementById('visualizer');
@@ -121,6 +158,26 @@
         const startToneButton = document.getElementById('start-tone');
         const stopToneButton = document.getElementById('stop-tone');
         const noteButtons = document.querySelectorAll('.note-button');
+        const waveformSelect = document.getElementById('waveform-select');
+        const colorPicker = document.getElementById('color-picker');
+        const toggleAnimationButton = document.getElementById('toggle-animation');
+        const downloadImageButton = document.getElementById('download-image');
+        const toggleMicButton = document.getElementById('toggle-mic');
+
+        // Restore saved settings
+        const savedFreq = localStorage.getItem('cym-frequency');
+        if (savedFreq) {
+            frequencySlider.value = savedFreq;
+            frequencyInput.value = savedFreq;
+            frequencyValue.textContent = `${savedFreq} Hz`;
+            noteButtons.forEach(btn => {
+                if (parseFloat(btn.getAttribute('data-frequency')) === parseFloat(savedFreq)) {
+                    btn.classList.add('selected-note');
+                }
+            });
+        }
+        waveformSelect.value = currentWaveform;
+        colorPicker.value = pointColor;
 
         // Function to validate frequency input
         function validateFrequency(value) {
@@ -137,9 +194,12 @@
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
+            if (useMicrophone) {
+                stopMicrophone();
+            }
             stopTone(); // Ensure previous oscillator is stopped
             oscillator = audioContext.createOscillator();
-            oscillator.type = 'sine';
+            oscillator.type = currentWaveform;
             oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
@@ -163,11 +223,42 @@
             stopToneButton.disabled = true;
         }
 
+        async function startMicrophone() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                microphoneSource = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                microphoneSource.connect(analyser);
+                useMicrophone = true;
+                toggleMicButton.textContent = 'Stop Microphone';
+                startToneButton.disabled = true;
+                stopTone();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function stopMicrophone() {
+            if (!useMicrophone) return;
+            microphoneSource.mediaStream.getTracks().forEach(t => t.stop());
+            microphoneSource.disconnect();
+            analyser.disconnect();
+            analyser = null;
+            dataArray = null;
+            microphoneSource = null;
+            useMicrophone = false;
+            toggleMicButton.textContent = 'Start Microphone';
+            startToneButton.disabled = false;
+        }
+
         // Update frequency value dynamically from slider and input
         frequencySlider.addEventListener('input', function() {
             const frequency = validateFrequency(this.value);
             frequencyInput.value = frequency;
             frequencyValue.textContent = `${frequency} Hz`;
+            localStorage.setItem('cym-frequency', frequency);
             if (oscillator) {
                 oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             }
@@ -177,6 +268,7 @@
             const frequency = validateFrequency(this.value);
             frequencySlider.value = frequency;
             frequencyValue.textContent = `${frequency} Hz`;
+            localStorage.setItem('cym-frequency', frequency);
             if (oscillator) {
                 oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
             }
@@ -188,6 +280,46 @@
             startTone(frequency);
         });
         stopToneButton.addEventListener('click', stopTone);
+
+        waveformSelect.addEventListener('change', () => {
+            currentWaveform = waveformSelect.value;
+            localStorage.setItem('cym-waveform', currentWaveform);
+            if (oscillator) {
+                oscillator.type = currentWaveform;
+            }
+        });
+
+        colorPicker.addEventListener('input', () => {
+            pointColor = colorPicker.value;
+            localStorage.setItem('cym-color', pointColor);
+        });
+
+        toggleAnimationButton.addEventListener('click', () => {
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationId) cancelAnimationFrame(animationId);
+                toggleAnimationButton.textContent = 'Resume Animation';
+            } else {
+                isAnimating = true;
+                toggleAnimationButton.textContent = 'Pause Animation';
+                animate();
+            }
+        });
+
+        downloadImageButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'cymatics.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        toggleMicButton.addEventListener('click', () => {
+            if (useMicrophone) {
+                stopMicrophone();
+            } else {
+                startMicrophone();
+            }
+        });
 
         // Initially disable the stop button
         stopToneButton.disabled = true;
@@ -226,7 +358,7 @@
 
                     ctx.beginPath();
                     ctx.arc(x, y, 3, 0, Math.PI * 2); // Increased point size to 3
-                    ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+                    ctx.fillStyle = pointColor;
                     ctx.fill();
                 }
             }
@@ -234,10 +366,26 @@
 
         // Animation loop with time evolution
         function animate() {
-            const frequency = validateFrequency(frequencySlider.value);
+            if (!isAnimating) return;
+            let frequency = validateFrequency(frequencySlider.value);
+            if (useMicrophone && analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                let maxVal = 0;
+                let maxIndex = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    if (dataArray[i] > maxVal) {
+                        maxVal = dataArray[i];
+                        maxIndex = i;
+                    }
+                }
+                frequency = maxIndex * audioContext.sampleRate / analyser.fftSize;
+                frequencySlider.value = frequency.toFixed(2);
+                frequencyInput.value = frequency.toFixed(2);
+                frequencyValue.textContent = `${frequency.toFixed(2)} Hz`;
+            }
             drawCymaticPattern(frequency);
             time = (time + 0.02) % (Math.PI * 2); // Keeps time within a reasonable range
-            requestAnimationFrame(animate);
+            animationId = requestAnimationFrame(animate);
         }
 
         // Note buttons event listeners
@@ -247,6 +395,9 @@
                 frequencySlider.value = frequency;
                 frequencyInput.value = frequency;
                 frequencyValue.textContent = `${frequency} Hz`;
+                localStorage.setItem('cym-frequency', frequency);
+                noteButtons.forEach(b => b.classList.remove('selected-note'));
+                button.classList.add('selected-note');
 
                 if (oscillator) {
                     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
