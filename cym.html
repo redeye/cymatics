@@ -83,6 +83,15 @@
         <br><br>
         <button id="start-tone">Start Tone</button>
         <button id="stop-tone">Stop Tone</button>
+        <br>
+        <button id="start-mic">Start Mic</button>
+        <button id="stop-mic">Stop Mic</button>
+        <br>
+        <label for="smoothing">smoothingTimeConstant:</label>
+        <input type="range" id="smoothing" min="0" max="1" step="0.01" value="0.8">
+        <label for="fft-size">fftSize:</label>
+        <input type="number" id="fft-size" min="32" max="2048" step="32" value="1024">
+        <br>
 
         <div id="note-buttons">
             <p>Select a note:</p>
@@ -121,6 +130,13 @@
         const startToneButton = document.getElementById('start-tone');
         const stopToneButton = document.getElementById('stop-tone');
         const noteButtons = document.querySelectorAll('.note-button');
+        const startMicButton = document.getElementById("start-mic");
+        const stopMicButton = document.getElementById("stop-mic");
+        const smoothingControl = document.getElementById("smoothing");
+        const fftSizeControl = document.getElementById("fft-size");
+        let analyser = null;
+        let micSource = null;
+
 
         // Function to validate frequency input
         function validateFrequency(value) {
@@ -162,6 +178,83 @@
             startToneButton.disabled = false;
             stopToneButton.disabled = true;
         }
+        function updateAnalyserSettings() {
+            if (analyser) {
+                analyser.smoothingTimeConstant = parseFloat(smoothingControl.value);
+                analyser.fftSize = parseInt(fftSizeControl.value);
+            }
+        }
+
+        async function startMic() {
+            if (audioContext.state === "suspended") {
+                await audioContext.resume();
+            }
+            if (micSource) stopMic();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micSource = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                updateAnalyserSettings();
+                micSource.connect(analyser);
+                startMicButton.disabled = true;
+                stopMicButton.disabled = false;
+                analyzeMic();
+            } catch (e) {
+                console.error("Microphone access error", e);
+            }
+        }
+
+        function stopMic() {
+            if (micSource) {
+                micSource.disconnect();
+                micSource = null;
+            }
+            analyser = null;
+            startMicButton.disabled = false;
+            stopMicButton.disabled = true;
+        }
+
+        function autoCorrelate(buffer, sampleRate) {
+            const size = buffer.length;
+            let maxCorrelation = 0;
+            let bestOffset = -1;
+            for (let offset = 1; offset < size; offset++) {
+                let correlation = 0;
+                for (let i = 0; i < size - offset; i++) {
+                    correlation += buffer[i] * buffer[i + offset];
+                }
+                if (correlation > maxCorrelation) {
+                    maxCorrelation = correlation;
+                    bestOffset = offset;
+                }
+            }
+            return bestOffset > 0 ? sampleRate / bestOffset : -1;
+        }
+
+        function analyzeMic() {
+            if (!analyser) return;
+            const bufferLength = analyser.fftSize;
+            const buffer = new Float32Array(bufferLength);
+            analyser.getFloatTimeDomainData(buffer);
+            const freq = autoCorrelate(buffer, audioContext.sampleRate);
+            if (freq !== -1) {
+                const frequency = validateFrequency(freq);
+                frequencySlider.value = frequency;
+                frequencyInput.value = frequency;
+                frequencyValue.textContent = `${frequency} Hz`;
+                if (oscillator) {
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                }
+            }
+            requestAnimationFrame(analyzeMic);
+        }
+
+        startMicButton.addEventListener("click", startMic);
+        stopMicButton.addEventListener("click", stopMic);
+        smoothingControl.addEventListener("input", updateAnalyserSettings);
+        fftSizeControl.addEventListener("input", updateAnalyserSettings);
+        stopMicButton.disabled = true;
+
 
         // Update frequency value dynamically from slider and input
         frequencySlider.addEventListener('input', function() {

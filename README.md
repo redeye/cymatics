@@ -8,6 +8,7 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
 - **Interactive Frequency Controls**: Adjust the frequency using a slider or manual input, with a range of 20 Hz to 5000 Hz.
 - **Musical Note Buttons**: Quickly switch between predefined musical notes (C4 to C5), which will update the frequency and visual pattern.
 - **Real-Time Tone Generation**: Play a sine wave tone that matches the selected frequency.
+- **Microphone Pitch Detection**: Use your microphone to drive the visuals with real-time pitch analysis.
 - **Responsive Design**: The visualizer adapts to different screen sizes and resolutions.
 - **Accessibility Features**: All input elements are keyboard accessible.
 
@@ -20,7 +21,9 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
     - The cymatic pattern will update in real-time based on the selected frequency.
 3. **Stop the Tone**: Click the `Stop Tone` button to stop the sine wave generation.
 4. **Select a Musical Note**: Use the provided buttons to quickly set the frequency to predefined musical notes (C4, D4, E4, etc.).
-5. **Responsive Canvas**: The canvas automatically adjusts to the screen size, ensuring optimal viewing on all devices.
+5. **Start Mic**: Click the `Start Mic` button and allow microphone access to drive the visualization.
+6. **Adjust Mic Settings**: Use the `smoothingTimeConstant` slider and `fftSize` input to fine-tune responsiveness.
+7. **Responsive Canvas**: The canvas automatically adjusts to the screen size, ensuring optimal viewing on all devices.
 
 ## Project Structure
 
@@ -29,6 +32,7 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
     - **Audio Generation**: Uses the Web Audio API to generate sine wave tones.
     - **Pattern Rendering**: Real-time rendering of cymatic patterns using trigonometric functions.
     - **Responsive Controls**: The frequency can be adjusted via a slider, input field, or note buttons.
+    - **Microphone Input**: Pitch detection via autocorrelation drives the visualization.
 - **CSS**: Simple styling for layout, accessibility, and responsiveness.
 
 ## Notes on Functionality
@@ -37,6 +41,7 @@ This project is an interactive **Cymatic Visualizer** that displays evolving wav
 - The **time variable** is used to animate the patterns in real-time, simulating the movement of sound waves.
 - **Wave Count**: Increased to **10** concentric waves for better visual detail.
 - **High-Resolution Support**: Automatically detects and adjusts for high-resolution screens.
+- **Microphone Controls**: `smoothingTimeConstant` and `fftSize` let you tune how quickly the visualization reacts to audio.
 
 ## Installation
 
