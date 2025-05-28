@@ -4,70 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cymatic Visualizer with Musical Notes</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        canvas {
-            border: 1px solid #fff;
-            width: 95vw;
-            height: 95vh;
-            max-width: 800px;
-            max-height: 800px;
-        }
-
-        #controls {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        input[type=range] {
-            width: 300px;
-            margin: 10px 0;
-        }
-
-        input[type=number] {
-            width: 100px;
-            margin-left: 10px;
-        }
-
-        label {
-            margin-right: 10px;
-        }
-
-        button {
-            margin: 5px;
-        }
-
-        #note-buttons {
-            margin-top: 20px;
-        }
-
-        .note-button {
-            margin: 2px;
-            padding: 5px 10px;
-        }
-
-        @media (max-width: 600px) {
-            input[type=range] {
-                width: 80vw;
-            }
-
-            input[type=number] {
-                width: 60vw;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -240,6 +177,11 @@
             requestAnimationFrame(animate);
         }
 
+        // Helper to clear selected note highlight
+        function clearActiveNotes() {
+            noteButtons.forEach(btn => btn.classList.remove('active'));
+        }
+
         // Note buttons event listeners
         noteButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -248,11 +190,17 @@
                 frequencyInput.value = frequency;
                 frequencyValue.textContent = `${frequency} Hz`;
 
+                clearActiveNotes();
+                button.classList.add('active');
+
                 if (oscillator) {
                     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
                 }
             });
         });
+
+        frequencySlider.addEventListener('input', clearActiveNotes);
+        frequencyInput.addEventListener('input', clearActiveNotes);
 
         // Accessibility enhancements
         frequencySlider.setAttribute('tabindex', '0');

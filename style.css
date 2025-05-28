@@ -1,0 +1,85 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #000;
+    color: white;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+canvas {
+    border: 1px solid #fff;
+    width: 95vw;
+    height: 95vh;
+    max-width: 800px;
+    max-height: 800px;
+}
+
+#controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    text-align: center;
+}
+
+input[type=range] {
+    width: 300px;
+    margin: 10px 0;
+}
+
+input[type=number] {
+    width: 100px;
+    margin-left: 10px;
+}
+
+label {
+    margin-right: 10px;
+}
+
+button {
+    margin: 5px;
+    padding: 8px 12px;
+    border: 1px solid #fff;
+    background: #222;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+button:hover {
+    background: #333;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#note-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.note-button.active {
+    background: #0ff;
+    color: #000;
+}
+
+@media (max-width: 600px) {
+    input[type=range] {
+        width: 80vw;
+    }
+
+    input[type=number] {
+        width: 60vw;
+        margin-left: 0;
+    }
+}
